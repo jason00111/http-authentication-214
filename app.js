@@ -16,7 +16,7 @@ function sessionMiddleware (req, res, next) {
     }
     req.setSessionKey = function (key, value) {
       req._session[key] = value
-      res.cookie('session', encrypt(req._session))
+      res.cookie('session', encrypt(JSON.stringify(req._session)))
     }
     req.getSessionKey = function (key) {
       return req._session[key]
@@ -28,7 +28,7 @@ function sessionMiddleware (req, res, next) {
   }
 
   if ('session' in req.cookies) {
-    req.setSession(decrypt(req.cookies.session))
+    req.setSession(JSON.parse(decrypt(req.cookies.session)))
   } else {
     req.resetSession()
   }
@@ -36,19 +36,22 @@ function sessionMiddleware (req, res, next) {
   next()
 }
 
-function encrypt (sessionObject) {
-  const rawString = JSON.stringify(sessionObject)
-  const encryptedString = rawString.split('').map(
-    char => String.fromCharCode(char.charCodeAt(0) + 7)
-  ).join('')
-  return encryptedString
+var crypto = require('crypto'),
+    algorithm = 'aes-256-ctr',
+    password = 'd6F3Efeq';
+
+function encrypt(text){
+  var cipher = crypto.createCipher(algorithm,password)
+  var crypted = cipher.update(text,'utf8','hex')
+  crypted += cipher.final('hex');
+  return crypted;
 }
 
-function decrypt (encryptedString) {
-  const rawString = encryptedString.split('').map(
-    char => String.fromCharCode(char.charCodeAt(0) - 7)
-  ).join('')
-  return JSON.parse(rawString)
+function decrypt(text){
+  var decipher = crypto.createDecipher(algorithm,password)
+  var dec = decipher.update(text,'hex','utf8')
+  dec += decipher.final('utf8');
+  return dec;
 }
 
 const getInformationHtml =
