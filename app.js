@@ -7,6 +7,8 @@ const app = express()
 app.use(cookieParser())
 app.use(bodyParser.urlencoded({extended: true}))
 
+app.use(sessionMiddleware)
+
 function sessionMiddleware (req, res, next) {
   if (!req.setSession) {
     req.setSession = function (sessionObject) {
@@ -14,7 +16,7 @@ function sessionMiddleware (req, res, next) {
     }
     req.setSessionKey = function (key, value) {
       req._session[key] = value
-      res.cookie('session', JSON.stringify(req._session))
+      res.cookie('session', encrypt(req._session))
     }
     req.getSessionKey = function (key) {
       return req._session[key]
@@ -26,7 +28,7 @@ function sessionMiddleware (req, res, next) {
   }
 
   if ('session' in req.cookies) {
-    req.setSession(JSON.parse(req.cookies.session))
+    req.setSession(decrypt(req.cookies.session))
   } else {
     req.resetSession()
   }
@@ -34,7 +36,20 @@ function sessionMiddleware (req, res, next) {
   next()
 }
 
-app.use(sessionMiddleware)
+function encrypt (sessionObject) {
+  const rawString = JSON.stringify(sessionObject)
+  const encryptedString = rawString.split('').map(
+    char => String.fromCharCode(char.charCodeAt(0) + 7)
+  ).join('')
+  return encryptedString
+}
+
+function decrypt (encryptedString) {
+  const rawString = encryptedString.split('').map(
+    char => String.fromCharCode(char.charCodeAt(0) - 7)
+  ).join('')
+  return JSON.parse(rawString)
+}
 
 const getInformationHtml =
 `<h1>Enter Your Information</h1>
