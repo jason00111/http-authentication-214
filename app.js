@@ -7,6 +7,17 @@ const app = express()
 app.use(cookieParser())
 app.use(bodyParser.urlencoded({extended: true}))
 
+function sessionMiddleware (req, res, next) {
+  if ('session' in req.cookies) {
+    req.session = JSON.parse(req.cookies.session)
+  } else {
+    req.session = {}
+  }
+  next()
+}
+
+app.use(sessionMiddleware)
+
 const getUsernameHtml =
 `<form method="post" action="/">
   <label>Enter username:</label>
@@ -20,9 +31,9 @@ const clearUsernameHtml =
 </form>`
 
 app.get('/', function (req, res) {
-  if ('username' in req.cookies) {
+  if ('username' in req.session) {
     res.type('html')
-    res.send(`<p>Your username is</p><pre>${req.cookies.username}</pre>` + clearUsernameHtml)
+    res.send(`<p>Your username is</p><pre>${req.session.username}</pre>` + clearUsernameHtml)
   } else {
     res.type('html')
     res.send(getUsernameHtml)
@@ -30,13 +41,15 @@ app.get('/', function (req, res) {
 })
 
 app.post('/', function (req, res) {
-  res.cookie('username', req.body.username)
+  res.cookie('session', JSON.stringify({
+    username: req.body.username
+  }))
   res.type('html')
   res.send(`<p>Your username is</p><pre>${req.body.username}</pre>` + clearUsernameHtml)
 })
 
 app.post('/clear', function (req, res) {
-  res.clearCookie('username')
+  res.clearCookie('session')
   res.type('html')
   res.send(getUsernameHtml)
 })
