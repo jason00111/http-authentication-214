@@ -36,38 +36,51 @@ function sessionMiddleware (req, res, next) {
 
 app.use(sessionMiddleware)
 
-const getUsernameHtml =
-`<form method="post" action="/">
-  <label>Enter username:</label>
-  <input type="text" name="username">
+const getInformationHtml =
+`<h1>Enter Your Information</h1>
+<form method="post" action="/">
+  <label>First Name:</label>
+  <input type="text" name="firstName">
+  <label>Last Name:</label>
+  <input type="text" name="lastName">
+  <label>Age:</label>
+  <input type="text" name="age">
   <input type="submit" value="Send">
 </form>`
 
-const clearUsernameHtml =
+const clearInformationHtml =
 `<form method="post" action="/clear">
-  <input type="submit" value="Clear Username">
+  <input type="submit" value="Clear Information">
 </form>`
+
+function sendUserInformation (req, res) {
+  res.type('html')
+  res.send(`<h1>Your Information</h1>
+    <pre>First Name: ${req.getSessionKey('firstName')}</pre>
+    <pre>Last Name: ${req.getSessionKey('lastName')}</pre>
+    <pre>Age: ${req.getSessionKey('age')}</pre>` + clearInformationHtml)
+}
 
 app.get('/', function (req, res) {
   if (req.getSessionKey('username')) {
-    res.type('html')
-    res.send(`<p>Your username is</p><pre>${req.getSessionKey('username')}</pre>` + clearUsernameHtml)
+    sendUserInformation(req, res)
   } else {
     res.type('html')
-    res.send(getUsernameHtml)
+    res.send(getInformationHtml)
   }
 })
 
 app.post('/', function (req, res) {
-  req.setSessionKey('username', req.body.username)
-  res.type('html')
-  res.send(`<p>Your username is</p><pre>${req.body.username}</pre>` + clearUsernameHtml)
+  req.setSessionKey('firstName', req.body.firstName)
+  req.setSessionKey('lastName', req.body.lastName)
+  req.setSessionKey('age', req.body.age)
+  sendUserInformation(req, res)
 })
 
 app.post('/clear', function (req, res) {
   req.resetSession()
   res.type('html')
-  res.send(getUsernameHtml)
+  res.send(getInformationHtml)
 })
 
 app.listen(3000, function () {
